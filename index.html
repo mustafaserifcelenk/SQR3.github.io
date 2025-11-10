@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta http-euqiv=“Content-Type” content=“text/html; charset=utf-8”>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEHB Dostu SQ3R Eylem Planı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Warm Amber (Arka plan için bg-amber-50, bileşenler için bg-white, vurgular için text-orange-600) -->
+    <!-- Application Structure Plan: Raporun doğrusal metin yapısı, DEHB dostu bir "interaktif sihirbaz" (wizard) yapısına dönüştürüldü. Ana gezinme, "Giriş", "Hazırlık", "Yöntem" ve "Neden İşe Yarıyor?" sekmeleriyle sağlanır. Bu, kullanıcının bunalmadan her seferinde bir aşamaya odaklanmasını sağlar. "Yöntem" bölümü, S-Q-R1R2-R3 için kendi alt sekmelerine sahiptir. Bu yapı, raporun "adımlara bölme" felsefesini doğrudan yansıtır ve pasif okumak yerine aktif katılımı (interaktif kontrol listeleri, zamanlayıcı, soru giriş alanı) teşvik eder. -->
+    <!-- Visualization & Content Choices: Rapor metin ve süreç ağırlıklı olduğundan, veri görselleştirmesi (Chart.js) yerine süreç görselleştirmesi ve interaktiviteye odaklanıldı. 1) HAZIRLIK/YÖNTEM KONTROL LİSTELERİ: Statik [ ] metni -> Tıklanabilir interaktif HTML/JS öğeleri. Gerekçe: Raporun "görev tamamlama" ve "dopamin" hedefini gerçekleştirmek. 2) ZAMANLAYICI: Raporun "Pomodoro" önerisi -> Basit JS zamanlayıcı aracı. Gerekçe: Pasif öneriyi aktif bir araca dönüştürmek ("wow" faktörü). 3) 'Q - SORU SOR' ADIMI: "Not defterine yaz" önerisi -> İnteraktif 'Soru Ekle' formu ve JS dizisi. Gerekçe: Kullanıcıyı uygulama içinde tutmak ve veriyi (soruları) R1/R2 adımında tekrar kullanmak. 4) 'R1/R2 - OKU & ANLAT' ADIMI: Q'da girilen soruları dinamik olarak listeler. Gerekçe: Yöntemin döngüsel doğasını görselleştirmek. 5) 'NEDEN İŞE YARIYOR' BÖLÜMÜ: Madde işaretleri -> Tailwind ile stil verilmiş 'Kart' düzeni. Gerekçe: Bilgiyi sindirilebilir parçalara ayırmak. Chart.js CDN'i yüklendi, ancak veri içermeyen bir raporda gereksiz grafikler oluşturulmadı. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+
+        .tab-btn {
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .checklist-item {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .checklist-item:hover {
+            background-color: #fffbeb;
+        }
+
+        .checkbox-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #f97316;
+            border-radius: 0.25rem;
+            margin-right: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-weight: bold;
+            color: #f97316;
+        }
+
+        .checklist-item.done {
+            text-decoration: line-through;
+            color: #a1a1aa;
+        }
+
+        .checklist-item.done .checkbox-icon {
+            background-color: #f97316;
+            color: white;
+        }
+        
+        .checklist-item.done .checkbox-icon::before {
+            content: '✔';
+        }
+
+        .sub-tab-btn.active {
+            border-color: #f97316;
+            background-color: #fff7ed;
+        }
+    </style>
+</head>
+<body class="bg-amber-50 font-sans leading-relaxed text-stone-800">
+
+    <div class="container mx-auto p-4 sm:p-8 max-w-4xl">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-orange-600">DEHB Dostu SQ3R İnteraktif Eylem Planı</h1>
+            <p class="text-lg text-stone-600 mt-2">Yoğun metinleri okumak için etkileşimli yardımcınız.</p>
+        </header>
+
+        <nav class="flex flex-wrap justify-center gap-2 sm:gap-4 mb-8" role="tablist">
+            <button role="tab" data-target="panel-giris" class="tab-btn active w-full sm:w-auto text-sm sm:text-base font-semibold py-2 px-4 rounded-lg shadow-sm bg-orange-600 text-white">
+                Giriş
+            </button>
+            <button role="tab" data-target="panel-hazirlik" class="tab-btn w-full sm:w-auto text-sm sm:text-base font-semibold py-2 px-4 rounded-lg shadow-sm bg-white text-orange-600 hover:bg-orange-100">
+                Aşama 1: Hazırlık
+            </button>
+            <button role="tab" data-target="panel-yontem" class="tab-btn w-full sm:w-auto text-sm sm:text-base font-semibold py-2 px-4 rounded-lg shadow-sm bg-white text-orange-600 hover:bg-orange-100">
+                Aşama 2: Yöntem
+            </button>
+            <button role="tab" data-target="panel-neden" class="tab-btn w-full sm:w-auto text-sm sm:text-base font-semibold py-2 px-4 rounded-lg shadow-sm bg-white text-orange-600 hover:bg-orange-100">
+                Neden İşe Yarıyor?
+            </button>
+        </nav>
+
+        <main id="tab-content" class="bg-white rounded-xl shadow-lg p-6 sm:p-10">
+
+            <!-- Panel 1: Giriş -->
+            <div id="panel-giris" class="tab-panel">
+                <h2 class="text-2xl font-bold text-orange-600 mb-4">Bu Araç Nedir?</h2>
+                <p class="text-lg mb-4">
+                    Bu plan, yoğun bir metni okurken dikkatinizi korumanıza, bilgiyi işlemenize ve çalışma belleğinizi aşırı yüklememenize yardımcı olmak için tasarlanmıştır.
+                </p>
+                <p class="text-stone-600">
+                    Bu sadece bir okuma planı değil, aynı zamanda interaktif bir araçtır. Adımları okumakla kalmayıp, bu uygulama üzerinden takip edebilir, zamanlayıcı kurabilir, kontrol listelerini işaretleyebilir ve kendi sorularınızı ekleyebilirsiniz.
+                </p>
+                <div class="mt-6 p-4 bg-amber-100 border-l-4 border-amber-500 text-amber-800 rounded-lg">
+                    <p>Başlamak için <strong class="font-semibold">"Aşama 1: Hazırlık"</strong> sekmesine tıklayın.</p>
+                </div>
+            </div>
+
+            <!-- Panel 2: Hazırlık -->
+            <div id="panel-hazirlik" class="tab-panel hidden">
+                <h2 class="text-2xl font-bold text-orange-600 mb-2">Aşama 1: Hazırlık</h2>
+                <p class="text-stone-600 mb-6">Göreve başlamayı kolaylaştırmak ve fiziksel engelleri kaldırmak için bu adımları izleyin.</p>
+                
+                <div class="mb-8 p-4 border border-dashed border-orange-300 rounded-lg">
+                    <h3 class="text-lg font-semibold text-orange-700 mb-3">Pomodoro Zamanlayıcı (Önemli!)</h3>
+                    <p class="text-sm text-stone-600 mb-4">"Şimdi 20 dakika boyunca SADECE bu görevle ilgileneceğim" diye kendinize söz verin. Zamanlayıcıyı başlatın.</p>
+                    <div class="flex items-center gap-4">
+                        <div id="timer-display" class="text-3xl font-bold text-stone-800 bg-amber-100 px-4 py-2 rounded-lg">20:00</div>
+                        <button id="timer-toggle-btn" class="bg-orange-600 text-white font-semibold px-5 py-2 rounded-lg shadow-sm hover:bg-orange-700 transition-colors">
+                            Başlat
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="checklist-item p-3 rounded-lg border border-transparent">
+                        <div class="checkbox-icon"></div>
+                        <span class="text-lg">Okuyacağınız metni (makale, kitap bölümü vb.) önünüze alın.</span>
+                    </div>
+                    <div class="checklist-item p-3 rounded-lg border border-transparent">
+                        <div class="checkbox-icon"></div>
+                        <span class="text-lg">Bir not defteri/boş bir kağıt ve bir kalem (veya dijital not uygulaması) yanınıza alın.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 3: Yöntem (SQ3R) -->
+            <div id="panel-yontem" class="tab-panel hidden">
+                <h2 class="text-2xl font-bold text-orange-600 mb-6">Aşama 2: Eylem Planı (SQ3R Adımları)</h2>
+                
+                <div class="flex flex-col sm:flex-row border-b-2 border-amber-200 mb-6">
+                    <button data-subtarget="subpanel-s" class="sub-tab-btn active w-full sm:w-auto font-semibold text-stone-700 py-3 px-6 border-b-4 transition-colors border-transparent text-center sm:text-left">
+                        1. S (Göz At)
+                    </button>
+                    <button data-subtarget="subpanel-q" class="sub-tab-btn w-full sm:w-auto font-semibold text-stone-700 py-3 px-6 border-b-4 transition-colors border-transparent text-center sm:text-left">
+                        2. Q (Soru Sor)
+                    </button>
+                    <button data-subtarget="subpanel-r1r2" class="sub-tab-btn w-full sm:w-auto font-semibold text-stone-700 py-3 px-6 border-b-4 transition-colors border-transparent text-center sm:text-left">
+                        3. R1/R2 (Oku & Anlat)
+                    </button>
+                    <button data-subtarget="subpanel-r3" class="sub-tab-btn w-full sm:w-auto font-semibold text-stone-700 py-3 px-6 border-b-4 transition-colors border-transparent text-center sm:text-left">
+                        4. R3 (Gözden Geçir)
+                    </button>
+                </div>
+
+                <div id="sub-tab-content">
+                    <!-- S: Survey -->
+                    <div id="subpanel-s" class="sub-tab-panel">
+                        <h3 class="text-xl font-semibold text-stone-800 mb-2">ADIM 1: S – Survey (Göz At / Tara)</h3>
+                        <p class="text-stone-600 mb-6"><strong>Amaç:</strong> Beyni ısıtmak ve bir "harita" çıkarmak. Bu, belirsizliği azaltır ve kaygıyı düşürür. (Bu adım için sadece 2 dakika ayırın!)</p>
+                        <div class="space-y-4">
+                            <div class="checklist-item p-3 rounded-lg border border-transparent">
+                                <div class="checkbox-icon"></div>
+                                <span class="text-lg">Ana başlığı okuyun.</span>
+                            </div>
+                            <div class="checklist-item p-3 rounded-lg border border-transparent">
+                                <div class="checkbox-icon"></div>
+                                <span class="text-lg">Metindeki tüm alt başlıkları hızla okuyun.</span>
+                            </div>
+                            <div class="checklist-item p-3 rounded-lg border border-transparent">
+                                <div class="checkbox-icon"></div>
+                                <span class="text-lg">Varsa grafiklere, resimlere veya tablolara bakın.</span>
+                            </div>
+                            <div class="checklist-item p-3 rounded-lg border border-transparent">
+                                <div class="checkbox-icon"></div>
+                                <span class="text-lg">Metnin ilk ve son paragrafını hızla okuyun.</span>
+                            </div>
+                            <div class="checklist-item p-3 rounded-lg border border-transparent">
+                                <div class="checkbox-icon"></div>
+                                <span class="text-lg">Kalın (bold) veya italik yazılmış kelimelere göz atın.</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Q: Question -->
+                    <div id="subpanel-q" class="sub-tab-panel hidden">
+                        <h3 class="text-xl font-semibold text-stone-800 mb-2">ADIM 2: Q – Question (Soru Sor)</h3>
+                        <p class="text-stone-600 mb-6"><strong>Amaç:</strong> Pasif okumayı, aktif bir "cevap avı"na dönüştürmek. Bu, beyninize bir görev verir ve odağı korur.</p>
+                        
+                        <div class="mb-8">
+                            <h4 class="text-lg font-semibold mb-3">Eylemler</h4>
+                            <div class="space-y-4">
+                                <div class="checklist-item p-3 rounded-lg border border-transparent">
+                                    <div class="checkbox-icon"></div>
+                                    <span class="text-lg">Gördüğünüz her alt başlığı bir soruya çevirin.</span>
+                                </div>
+                                <div class="checklist-item p-3 rounded-lg border border-transparent">
+                                    <div class="checkbox-icon"></div>
+                                    <span class="text-lg">Metinden ne öğrenmek istediğinize dair 1-2 basit soru daha ekleyin.</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-lg font-semibold mb-3">İnteraktif Soru Listesi</h4>
+                            <p class="text-sm text-stone-600 mb-4">Okumaya başlamadan önce sorularınızı buraya ekleyin. (Örn: "Kant'ın metafiziği neden eleştirildi?")</p>
+                            <div class="flex gap-2 mb-4">
+                                <input type="text" id="question-input" class="flex-grow w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400" placeholder="Sorunuzu buraya yazın...">
+                                <button id="add-question-btn" class="bg-orange-600 text-white font-semibold px-5 py-2 rounded-lg shadow-sm hover:bg-orange-700 transition-colors flex-shrink-0">Ekle</button>
+                            </div>
+                            <div id="question-list-q" class="mt-4 space-y-2">
+                                <p class="text-stone-500 italic text-center" id="no-questions-q-msg">Henüz soru eklenmedi.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- R1/R2: Read & Recite -->
+                    <div id="subpanel-r1r2" class="sub-tab-panel hidden">
+                        <h3 class="text-xl font-semibold text-stone-800 mb-2">ADIM 3 & 4: R1 (Oku) & R2 (Anlat)</h3>
+                        <p class="text-stone-600 mb-6"><strong>Amaç:</strong> Bilgiyi parçalara ayırarak işlemek ve çalışma belleğine yüklenmemek. Bu, planın en önemli kısmıdır.</p>
+                        
+                        <div class="mb-6">
+                            <h4 class="text-lg font-semibold mb-3">Eylemler</h4>
+                            <div class="space-y-4">
+                                <div class="checklist-item p-3 rounded-lg border border-transparent">
+                                    <div class="checkbox-icon"></div>
+                                    <span class="text-lg">Sadece ilk sorunuzun cevabını bulmak için okumaya başlayın.</span>
+                                </div>
+                                <div class="checklist-item p-3 rounded-lg border border-transparent">
+                                    <div class="checkbox-icon"></div>
+                                    <span class="text-lg">Cevabı bulunca **OKUMAYI BIRAKIN**.</span>
+                                </div>
+                                <div class="checklist-item p-3 rounded-lg border border-transparent">
+                                    <div class="checkbox-icon"></div>
+                                    <span class="text-lg">Metinden gözünüzü çekin ve cevabı kendi kelimelerinizle sesli olarak anlatın.</span>
+                                </div>
+                                <div class="checklist-item p-3 rounded-lg border border-transparent">
+                                    <div class="checkbox-icon"></div>
+                                    <span class="text-lg">Kendi cümlenizle bulduğunuz cevabı not alın (veya bir sonraki soruya geçin).</span>
+                                </div>
+                                <div class="checklist-item p-3 rounded-lg border border-transparent">
+                                    <div class="checkbox-icon"></div>
+                                    <span class="text-lg">Tüm sorular bitene kadar bu Oku & Anlat döngüsünü tekrarlayın.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="text-lg font-semibold mb-3">Cevap Aradığınız Sorular</h4>
+                            <div id="question-list-r1r2" class="mt-4 space-y-2 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                                <p class="text-stone-500 italic text-center" id="no-questions-r-msg">Cevap aramak için "Q (Soru Sor)" sekmesinde soru eklemelisiniz.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- R3: Review -->
+                    <div id="subpanel-r3" class="sub-tab-panel hidden">
+                        <h3 class="text-xl font-semibold text-stone-800 mb-2">ADIM 5: R3 – Review (Gözden Geçir)</h3>
+                        <p class="text-stone-600 mb-6"><strong>Amaç:</strong> Tüm parçaları birleştirmek ve bilginin uzun süreli belleğe geçişini sağlamak.</p>
+                        <div class="space-y-4">
+                            <div class="checklist-item p-3 rounded-lg border border-transparent">
+                                <div class="checkbox-icon"></div>
+                                <span class="text-lg">Orijinal metni kapatın. Artık ona ihtiyacınız yok.</span>
+                            </div>
+                            <div class="checklist-item p-3 rounded-lg border border-transparent">
+                                <div class="checkbox-icon"></div>
+                                <span class="text-lg">Sadece kendi notlarınızı (veya "Q" adımına eklediğiniz soruları ve cevaplarını) okuyun.</span>
+                            </div>
+                            <div class="checklist-item p-3 rounded-lg border border-transparent">
+                                <div class="checkbox-icon"></div>
+                                <span class="text-lg">Metnin tamamının ne hakkında olduğunu (ana fikir) kendinize sesli olarak özetleyin.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 4: Neden İşe Yarıyor? -->
+            <div id="panel-neden" class="tab-panel hidden">
+                <h2 class="text-2xl font-bold text-orange-600 mb-6">Neden Bu Yöntem DEHB İçin İşe Yarıyor?</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-amber-50 p-6 rounded-lg border border-amber-200">
+                        <h3 class="text-xl font-semibold text-orange-700 mb-3">🎯 Dopamin Görevi</h3>
+                        <p>Okumayı bir "cevap bulma oyunu"na çevirir. Her cevabı bulup not almak (veya listeden işaretlemek), beyninize küçük bir "görev tamamlandı" sinyali verir ve dopamin salgılar.</p>
+                    </div>
+                    <div class="bg-amber-50 p-6 rounded-lg border border-amber-200">
+                        <h3 class="text-xl font-semibold text-orange-700 mb-3">🧠 Çalışma Belleği Dostu</h3>
+                        <p>Bilgiyi yığınlar halinde değil, küçük, yönetilebilir parçalar halinde işler. "Anlat/Hatırla" (Recite) adımı, bilginin aktif olarak işlenmesini ve belleğe aktarılmasını sağlar.</p>
+                    </div>
+                    <div class="bg-amber-50 p-6 rounded-lg border border-amber-200">
+                        <h3 class="text-xl font-semibold text-orange-700 mb-3">⚓ Odaklanma Çıpası</h3>
+                        <p>"Şimdi hangi sorunun peşindeyim?" sorusu, zihniniz dağıldığında geri dönmeniz için güçlü bir "çıpa" görevi görür. Belirsizlik azalır.</p>
+                    </div>
+                    <div class="bg-amber-50 p-6 rounded-lg border border-amber-200">
+                        <h3 class="text-xl font-semibold text-orange-700 mb-3">🚀 Başlama Engelini Aşar</h3>
+                        <p>"Tüm metni okumak" yerine "Sadece 2 dakika tara" veya "Sadece ilk sorunun cevabını bul" gibi küçük, net görevler vermek, erteleme ve bunalmayı engeller.</p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const globalAppState = {
+                questions: [],
+                timer: {
+                    isRunning: false,
+                    timeLeftInSeconds: 20 * 60,
+                    intervalId: null
+                }
+            };
+
+            const tabButtons = document.querySelectorAll('button[role="tab"]');
+            const tabPanels = document.querySelectorAll('.tab-panel');
+            const subTabButtons = document.querySelectorAll('.sub-tab-btn');
+            const subTabPanels = document.querySelectorAll('.sub-tab-panel');
+            
+            const timerDisplay = document.getElementById('timer-display');
+            const timerToggleBtn = document.getElementById('timer-toggle-btn');
+            
+            const addQuestionBtn = document.getElementById('add-question-btn');
+            const questionInput = document.getElementById('question-input');
+            const questionListQ = document.getElementById('question-list-q');
+            const questionListR1R2 = document.getElementById('question-list-r1r2');
+            const noQuestionsQMsg = document.getElementById('no-questions-q-msg');
+            const noQuestionsRMsg = document.getElementById('no-questions-r-msg');
+
+            function handleTabClick(event, buttons, panels, activeClass, dataAttribute) {
+                const clickedButton = event.currentTarget;
+                const targetPanelId = clickedButton.getAttribute(dataAttribute);
+                
+                buttons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.getAttribute(dataAttribute).startsWith('panel-')) {
+                        btn.classList.remove('bg-orange-600', 'text-white');
+                        btn.classList.add('bg-white', 'text-orange-600', 'hover:bg-orange-100');
+                    } else if (btn.getAttribute(dataAttribute).startsWith('subpanel-')) {
+                        btn.classList.remove('active');
+                        btn.classList.remove('border-orange-600', 'bg-fff7ed');
+                    }
+                });
+
+                clickedButton.classList.add('active');
+                 if (clickedButton.getAttribute(dataAttribute).startsWith('panel-')) {
+                    clickedButton.classList.add('bg-orange-600', 'text-white');
+                    clickedButton.classList.remove('bg-white', 'text-orange-600', 'hover:bg-orange-100');
+                 } else if (clickedButton.getAttribute(dataAttribute).startsWith('subpanel-')) {
+                    clickedButton.classList.add('active');
+                    clickedButton.classList.add('border-orange-600', 'bg-fff7ed');
+                 }
+
+                panels.forEach(panel => {
+                    if (panel.id === targetPanelId) {
+                        panel.classList.remove('hidden');
+                    } else {
+                        panel.classList.add('hidden');
+                    }
+                });
+            }
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', (e) => handleTabClick(e, tabButtons, tabPanels, 'active', 'data-target'));
+            });
+
+            subTabButtons.forEach(button => {
+                button.addEventListener('click', (e) => handleTabClick(e, subTabButtons, subTabPanels, 'active', 'data-subtarget'));
+            });
+
+            function initChecklists() {
+                const checklistItems = document.querySelectorAll('.checklist-item');
+                checklistItems.forEach(item => {
+                    item.addEventListener('click', () => {
+                        item.classList.toggle('done');
+                    });
+                });
+            }
+
+            function updateTimerDisplay() {
+                const minutes = Math.floor(globalAppState.timer.timeLeftInSeconds / 60);
+                const seconds = globalAppState.timer.timeLeftInSeconds % 60;
+                timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            function toggleTimer() {
+                if (globalAppState.timer.isRunning) {
+                    clearInterval(globalAppState.timer.intervalId);
+                    globalAppState.timer.isRunning = false;
+                    timerToggleBtn.textContent = 'Devam Et';
+                    timerToggleBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    timerToggleBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
+                } else {
+                    globalAppState.timer.isRunning = true;
+                    timerToggleBtn.textContent = 'Durdur';
+                    timerToggleBtn.classList.remove('bg-orange-600', 'hover:bg-orange-700');
+                    timerToggleBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                    
+                    globalAppState.timer.intervalId = setInterval(() => {
+                        globalAppState.timer.timeLeftInSeconds--;
+                        updateTimerDisplay();
+                        if (globalAppState.timer.timeLeftInSeconds <= 0) {
+                            clearInterval(globalAppState.timer.intervalId);
+                            globalAppState.timer.isRunning = false;
+                            timerToggleBtn.textContent = 'Başlat';
+                            globalAppState.timer.timeLeftInSeconds = 20 * 60;
+                            updateTimerDisplay();
+                            alert('Pomodoro süresi doldu!');
+                        }
+                    }, 1000);
+                }
+            }
+
+            timerToggleBtn.addEventListener('click', toggleTimer);
+
+            function renderQuestionLists() {
+                questionListQ.innerHTML = '';
+                questionListR1R2.innerHTML = '';
+
+                if (globalAppState.questions.length === 0) {
+                    questionListQ.appendChild(noQuestionsQMsg);
+                    questionListR1R2.appendChild(noQuestionsRMsg);
+                    noQuestionsQMsg.classList.remove('hidden');
+                    noQuestionsRMsg.classList.remove('hidden');
+                } else {
+                    noQuestionsQMsg.classList.add('hidden');
+                    noQuestionsRMsg.classList.add('hidden');
+                    
+                    globalAppState.questions.forEach((q, index) => {
+                        const qItemQ = document.createElement('div');
+                        qItemQ.className = 'flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-200';
+                        qItemQ.innerHTML = `<span class="text-stone-700">${index + 1}. ${q}</span>`;
+                        questionListQ.appendChild(qItemQ);
+                        
+                        const qItemR = document.createElement('div');
+                        qItemR.className = 'flex items-center p-3 bg-white rounded-lg border border-stone-200';
+                        qItemR.innerHTML = `<span class="text-stone-700">${index + 1}. ${q}</span>`;
+                        questionListR1R2.appendChild(qItemR);
+                    });
+                }
+            }
+            
+            function handleAddQuestion() {
+                const questionText = questionInput.value.trim();
+                if (questionText) {
+                    globalAppState.questions.push(questionText);
+                    questionInput.value = '';
+                    renderQuestionLists();
+                }
+            }
+            
+            addQuestionBtn.addEventListener('click', handleAddQuestion);
+            questionInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleAddQuestion();
+                }
+            });
+
+            initChecklists();
+            renderQuestionLists();
+        });
+    </script>
+</body>
+</html>
